@@ -28,3 +28,19 @@ ipcMain.on('videos:added', (event, videos) => {
     mainWindow.webContents.send('metadata:complete', results);
   });
 });
+
+ipcMain.on('conversion:start', (event, videos) => {
+  for (let p in videos) {
+    const video = videos[p];
+    const outputDir = video.path.split(video.name)[0];
+    const outputName = video.name.split('.')[0];
+    const outputPath = `${outputDir}${outputName}.${video.format}`;
+    ffmpeg(video.path)
+      .output(outputPath)
+      .on('progress', ({ timemark }) => {
+        mainWindow.webContents.send('conversion:progress', { video, timemark });
+      })
+      .on('end', () => mainWindow.webContents.send('conversion:end', { video, outputPath }))
+      .run();
+  }
+});
